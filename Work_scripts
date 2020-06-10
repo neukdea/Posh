@@ -1,0 +1,15 @@
+# This scripts pulls all installed software from baseline system, then pulls software list from another system and compares it to get the difference.
+
+Function ReferenceSystem {
+ Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | where {$_.DisplayName -ne $Null -AND $_.DisplayName -ne ''} | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | export-csv $env:USERPROFILE\desktop\reference_System.csv -NoTypeInformation
+}
+
+Function TargetSystem {
+ Get-ItemProperty HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | where {$_.DisplayName -ne $Null -AND $_.DisplayName -ne ''} | Select-Object DisplayName, DisplayVersion, Publisher, InstallDate | Export-Csv $env:USERPROFILE\desktop\Not_The_Ref_System.csv -NoTypeInformation
+}
+
+Function CompareIt {
+    $ref = import-csv "$env:USERPROFILE\desktop\reference_System.csv"
+    $other = import-csv "$env:USERPROFILE\desktop\Not_The_Ref_System.csv"
+    Compare-Object -ReferenceObject $ref -DifferenceObject $other -Property "DisplayName","DisplayVersion","Publisher","InstallDate" | select DisplayName,DisplayVersion,Publisher,InstallDate,sideindicator | Export-Csv $env:USERPROFILE\desktop\differnce.csv -NoTypeInformation 
+}
