@@ -1,0 +1,502 @@
+<# Peek-A-Boo v1
+The Peek-A-Boo script is a gui PowerShell tool for testing the limit of Jump lists.
+Created By Neukdea (Joseph Gerstenberger)
+Current Build
+- V1 was simply a collection of scripts. This replaces all the scripts and puts them into
+    one GUI system.
+All folders are defaulted to C:\Test-Folder\<program name> (example would be Word, Text, Excel, PowerPoint)
+#>
+
+If ($NoWarning) {
+    $WarningPreference="SilentlyContinue"
+}
+
+#Clear Form Function - closes the form and reopens.  Useful to clear out any artificats
+Function ClearForm {
+	$Form.Close()
+	$Form.Dispose()
+	MakeForm
+}
+
+
+Function CopingWords { 
+    #where the magic happens.  Look into this folder for a file
+    $Files = Get-ChildItem -Filter '*.docx' -Recurse -Path $folderWord
+ 
+    #within said folder start counting and if the total number of files is less than $n (here it is set to 2500)
+    # copy the file until you hit $n numbers, and name them sequential for ease of use.
+    for($n = 0; $n -lt 2500; $n++)
+    { foreach ($File in $Files)
+        { 1..2500 | %{ Copy-Item $File.FullName ($folderWord + $File.BaseName + "_$n.docx")} }
+    }
+}
+
+Function MakeForm {
+
+###########################
+# Form Basics (at the top)#
+###########################
+$Form = New-Object System.Windows.Forms.Form
+$ButtonExit = New-Object System.Windows.Forms.Button
+$ButtonClear = New-Object System.Windows.Forms.Button
+$ButtonMakeWord = New-Object System.Windows.Forms.Button
+$ButtonCopyWord = New-Object System.Windows.Forms.Button
+$ButtonOpenWord = New-Object System.Windows.Forms.Button
+$ButtonMakeExcel = New-Object System.Windows.Forms.Button
+$ButtonCopyExcel = New-Object System.Windows.Forms.Button
+$ButtonOpenExcel = New-Object System.Windows.Forms.Button
+$ButtonMakePowerPoint = New-Object System.Windows.Forms.Button
+$ButtonCopyPowerPoint = New-Object System.Windows.Forms.Button
+$ButtonOpenPowerPoint = New-Object System.Windows.Forms.Button
+$statusBar = New-Object System.Windows.Forms.StatusBar
+$LabelAmount = New-Object System.Windows.Forms.Label
+$LabelSeconds = New-Object System.Windows.Forms.Label
+$LabelFolderText = New-Object System.Windows.Forms.Label
+$LabelFolderWord = New-Object System.Windows.Forms.Label
+$LabelFolderExcel = New-Object System.Windows.Forms.Label
+$LabelFolderPowerPoint = New-Object System.Windows.Forms.Label
+$ButtonFolderText = New-Object System.Windows.Forms.Button
+$ButtonFolderWord = New-Object System.Windows.Forms.Button
+$ButtonFolderExcel = New-Object System.Windows.Forms.Button
+$ButtonFolderPowerPoint = New-Object System.Windows.Forms.Button
+$BoxCreate = New-Object System.Windows.Forms.TextBox
+$BoxSeconds = New-Object System.Windows.Forms.TextBox
+
+################################
+# Form Basics (After Functions)#
+################################
+$Form.Size = '500,400'
+$Form.Text = "Peek-A-Boo v1"
+$form.StartPosition = "CenterScreen"
+$Form.MaximizeBox =$False 
+$Form.MinimizeBox =$True
+$Form.FormBorderStyle = 'Fixed3D' 
+
+###########################
+#        Generic          #
+###########################
+# Directions Label
+$LabelAmount.Text = "<- Amount desired to make" 
+$LabelAmount.size = '270,20'
+$LabelAmount.Location = '80,15'
+$Form.Controls.Add($LabelAmount)
+
+# Amount to create Box
+$BoxCreate.Location = '10,10'
+$BoxCreate.Size = '60,20'
+$BoxCreate.Text = "2500"
+$BoxCreate.BackColor = "Black"
+$BoxCreate.ForeColor = "White"
+$Form.Controls.Add($BoxCreate)
+
+# Seconds Label
+$LabelSeconds.Text = "seconds" 
+$LabelSeconds.size = '60,20'
+$LabelSeconds.Location = '400,15'
+$Form.Controls.Add($LabelSeconds)
+
+# Seconds Box
+$BoxSeconds.Location = '465,15'
+$BoxSeconds.Size = '20,20'
+$BoxSeconds.Text = "2"
+$BoxSeconds.BackColor = "Black"
+$BoxSeconds.ForeColor = "White"
+$Form.Controls.Add($BoxSeconds)
+
+# Make it pretty (vertical line left)
+$GenGraphic = $Form.createGraphics()
+$Form.add_paint({
+$mypen = new-object Drawing.Pen black
+$mypen.color = "Black" # Set the pen color
+$mypen.width = 5     # ste the pen line width
+$GenGraphic.DrawLine($mypen, 0, 50, 500, 50)  # draw a line
+})
+
+###########################
+#          Text           #
+###########################
+# Text Label
+$LabelFolderText.Text = "Text" 
+$LabelFolderText.size = '40,30'
+$LabelFolderText.Location = '50,60'
+$Form.Controls.Add($LabelFolderText)
+
+# Text Folder Button
+$FolderText = "C:\Test-Folder\Text"
+$ButtonFolderText.Location = '30,90'
+$ButtonFolderText.Text = "Folder"
+$ButtonFolderText.Add_Click({explorer (Resolve-Path $folderText)})
+$Form.Controls.Add($ButtonFolderText)
+
+# Make it pretty (vertical line left)
+$TexGraphic = $Form.createGraphics()
+$Form.add_paint({
+$mypen = new-object Drawing.Pen black
+$mypen.color = "Black" # Set the pen color
+$mypen.width = 5     # ste the pen line width
+$TexGraphic.DrawLine($mypen, 120, 50, 120, 335)  # draw a line
+})
+
+Function PeekABoo_Text {
+    # Generate a list of all files in the folder and pipe it to ForEach-Object
+    Get-ChildItem $FolderText -Name |
+
+# Loop through each file
+ForEach-Object { 
+
+    # Combines source folder path and file name
+    $filePath = $FolderText + $_
+
+    #Opens a file
+    Invoke-Item ($filePath)
+    
+    #wait a spell to ensure jumplist has time to see the file
+    start-sleep -seconds 2
+    
+    # the most ugly way to close word docs, but the more reliable :-(
+    taskkill.exe /s localhost /F /IM winword.exe /T 
+}
+
+}
+
+###########################
+#          Word           #
+###########################
+# Word Label
+$LabelFolderWord.Text = "Word" 
+$LabelFolderWord.size = '67,15'
+$LabelFolderWord.Location = '165,60'
+$Form.Controls.Add($LabelFolderWord)
+
+# Word Folder Button
+$folderWord = "C:\Test-Folder\Word\"
+$ButtonFolderWord.Location = '145,90'
+$ButtonFolderWord.Text = "Folder"
+$ButtonFolderWord.Add_Click({explorer (Resolve-Path $folderWord)})
+$Form.Controls.Add($ButtonFolderWord)
+
+# Make Words Button
+$ButtonMakeWord.Location = '145,120'
+$ButtonMakeWord.Text = "First"
+$ButtonMakeWord.Add_Click({MakingWords})
+$Form.Controls.Add($ButtonMakeWord)
+
+# Copy Words Button
+$ButtonCopyWord.Location = '145,150'
+$ButtonCopyWord.Text = "Copy"
+$ButtonCopyWord.Add_Click({CopingWords})
+$Form.Controls.Add($ButtonCopyWord)
+
+# Open/Close Words Button
+$ButtonOpenWord.Location = '145,180'
+$ButtonOpenWord.Text = "Open"
+$ButtonOpenWord.Add_Click({PeekABoo_Word})
+$Form.Controls.Add($ButtonOpenWord)
+
+# Make it pretty (vertical line left)
+$WordGraphic = $Form.createGraphics()
+$Form.add_paint({
+    $mypen = new-object Drawing.Pen black
+    $mypen.color = "Black" # Set the pen color
+    $mypen.width = 5     # ste the pen line width
+    $WordGraphic.DrawLine($mypen, 240, 50, 240, 335)  # draw a line
+})
+
+
+Function MakingWords {
+#Create a file location for testing, will only create folder if it does not exist
+    if (!(Test-Path -Path $folderWord)) 
+        { mkdir -Path $folderWord }
+
+    #Create Word instance
+    $word = New-Object -ComObject word.application
+    #No need to make it pop up.  If you are testing forensic focus items change to $true
+    $word.visible = $false
+    #create meat of word file
+    $docx = $word.documents.add()
+    #write something into the text file. Example would be; you are using this for a case study 
+    $text_within = $word.Selection
+    $text_within.typetext("For testing purposes")
+
+    #in order to save file.  ONLY CHANGE 'Word.docx' if you want to give it another name.  
+    #$folder is a location variable
+    $docx_path = "$folderWord\Word.docx"
+    $docx.SaveAs($docx_path)
+    $docx.close()
+    $word.quit()
+    $statusBar.Text= "Made One Word file, Please Hit Copy to feed the Legion"
+}
+
+Function CopingWords { 
+    #where the magic happens.  Look into this folder for a file
+    $Files = Get-ChildItem -Filter '*.docx' -Recurse -Path $folderWord
+    $num_box = $BoxCreate.Text 
+    #within said folder start counting and if the total number of files is less than $n (here it is set to 2500)
+    # copy the file until you hit $n numbers, and name them sequential for ease of use.
+    for($n = 0; $n -lt $num_box; $n++)
+        { foreach ($File in $Files)
+        { 
+            # pipe is super expensive, does another full on solution
+            $totalcount = 1..$num_box 
+            foreach ($n in $totalcount)
+            { Copy-Item $File.FullName ($folderWord + $File.BaseName + "_$n.docx") }
+
+        }
+    }
+}
+
+Function PeekABoo_Word {
+# Generate a list of all files in the folder and pipe it to ForEach-Object
+    Get-ChildItem $folderWord -Filter '*.docx' -Name |
+
+# Loop through each file
+    ForEach-Object { 
+
+        # Combines source folder path and file name
+        $filePath = $folderWord + $_
+
+        #Opens a file
+        Invoke-Item ($filePath)
+    
+        #wait a spell to ensure jumplist has time to see the file
+        start-sleep -seconds $BoxSeconds.Text
+    
+        # the most ugly way to close word docs, but the more reliable :-(
+        taskkill.exe /s localhost /F /IM winword.exe /T 
+    }
+}
+###########################
+#         Excel           #
+###########################
+#Add-Type -AssemblyName Microsoft.Office.Interop.Excel
+# Excel Label
+$LabelFolderExcel.Text = "Excel" 
+$LabelFolderExcel.size = '67,15'
+$LabelFolderExcel.Location = '280,60'
+$Form.Controls.Add($LabelFolderExcel)
+
+# Excel Folder Button
+$folderExcel = "C:\Test-Folder\Excel\"
+$ButtonFolderExcel.Location = '260,90'
+$ButtonFolderExcel.Text = "Folder"
+$ButtonFolderExcel.Add_Click({explorer (Resolve-Path $folderExcel)})
+$Form.Controls.Add($ButtonFolderExcel)
+
+# Make it pretty (vertical line left)
+$ExcGraphic = $Form.createGraphics()
+$Form.add_paint({
+$mypen = new-object Drawing.Pen black
+$mypen.color = "Black" # Set the pen color
+$mypen.width = 5     # ste the pen line width
+$ExcGraphic.DrawLine($mypen, 360, 50, 360, 335)  # draw a line
+})
+# Make Excels Button
+$ButtonMakeExcel.Location = '260,120'
+$ButtonMakeExcel.Text = "First"
+$ButtonMakeExcel.Add_Click({MakingExcels})
+$Form.Controls.Add($ButtonMakeExcel)
+
+# Copy Excels Button
+$ButtonCopyExcel.Location = '260,150'
+$ButtonCopyExcel.Text = "Copy"
+$ButtonCopyExcel.Add_Click({CopingExcels})
+$Form.Controls.Add($ButtonCopyExcel)
+
+# Open/Close Excels Button
+$ButtonOpenExcel.Location = '260,180'
+$ButtonOpenExcel.Text = "Open"
+$ButtonOpenExcel.Add_Click({PeekABoo_Excel})
+$Form.Controls.Add($ButtonOpenExcel)
+
+Function MakingExcels {
+#Create a file location for testing, will only create folder if it does not exist
+    if (!(Test-Path -Path $folderExcel)) 
+        { mkdir -Path $folderExcel }
+
+    #Create Excel instance
+    $Excel=New-Object -ComObject "Excel.Application"
+    #No need to make it pop up.  If you are testing forensic focus items change to $true
+    $Excel.visible = $true
+
+    #in order to save file.  ONLY CHANGE 'Excel.xlsx' if you want to give it another name.  
+    #$folder is a location variable
+    $excelsaveas = $folderExcel + 'excel.xlsx'
+    $Workbook=$Excel.Workbooks.Add()
+    $Workbook.SaveAs($excelsaveas)
+    $Excel.displayAlerts=$False
+    $Workbook.Close()
+    $Excel.Quit()
+    $statusBar.Text= "Made One Excel file, Please Hit Copy to feed the Legion"
+}
+
+Function CopingExcels { 
+    #where the magic happens.  Look into this folder for a file
+    $Files = Get-ChildItem -Path $folderExcel
+    $num_box = $BoxCreate.Text 
+    #within said folder start counting and if the total number of files is less than $n (here it is set to 2500)
+    # copy the file until you hit $n numbers, and name them sequential for ease of use.
+    for($n = 0; $n -lt $num_box; $n++)
+        { foreach ($File in $Files)
+        { 
+            # pipe is super expensive, does another full on solution
+            $totalcount = 1..$num_box 
+            foreach ($n in $totalcount)
+            { Copy-Item $File.FullName ($folderExcel + $File.BaseName + "_$n.xlsx") }
+
+        }
+    }
+}
+
+Function PeekABoo_Excel {
+    # Generate a list of all files in the folder and pipe it to ForEach-Object
+    Get-ChildItem $folderExcel -Filter '*.xlsx' -Name |
+
+    # Loop through each file
+    ForEach-Object { 
+
+        # Combines source folder path and file name
+        $filePath = $folderExcel + $_
+
+        #Opens a file
+        Invoke-Item ($filePath)
+    
+        #wait a spell to ensure jumplist has time to see the file
+        start-sleep -seconds $BoxSeconds.Text
+    
+        # the most ugly way to close Excel docs, but the more reliable :-(
+        taskkill.exe /s localhost /F /IM EXCEL.exe /T 
+        }
+}
+###########################
+#       PowerPoint        #
+###########################
+# PowerPoin Label
+$LabelFolderPowerPoint.Text = "PowerPoint" 
+$LabelFolderPowerPoint.size = '100,15'
+$LabelFolderPowerPoint.Location = '380,60'
+$Form.Controls.Add($LabelFolderPowerPoint)
+
+# PowerPoint Folder Button
+$folderPowerPoint = "C:\Test-Folder\PowerPoint\"
+$ButtonFolderPowerPoint.Location = '380,90'
+$ButtonFolderPowerPoint.Text = "Folder"
+$ButtonFolderPowerPoint.Add_Click({explorer (Resolve-Path $folderPowerPoint)})
+$Form.Controls.Add($ButtonFolderPowerPoint)
+
+# Make powerpoints Button
+$ButtonMakepowerpoint.Location = '380,120'
+$ButtonMakepowerpoint.Text = "First"
+$ButtonMakepowerpoint.Add_Click({Makingpowerpoints})
+$Form.Controls.Add($ButtonMakepowerpoint)
+
+# Copy powerpoints Button
+$ButtonCopypowerpoint.Location = '380,150'
+$ButtonCopypowerpoint.Text = "Copy"
+$ButtonCopypowerpoint.Add_Click({Copingpowerpoints})
+$Form.Controls.Add($ButtonCopypowerpoint)
+
+# Open/Close powerpoints Button
+$ButtonOpenpowerpoint.Location = '380,180'
+$ButtonOpenpowerpoint.Text = "Open"
+$ButtonOpenpowerpoint.Add_Click({PeekABoo_powerpoint})
+$Form.Controls.Add($ButtonOpenpowerpoint)
+
+Function Makingpowerpoints {
+#Create a file location for testing, will only create folder if it does not exist
+if (!(Test-Path -Path $folderpowerpoint)) 
+    {
+    mkdir -Path $folderpowerpoint
+    }
+
+ 
+    #Create powerpoint instance
+    $powerpoint = New-Object -ComObject powerpoint.application
+    #No need to make it pop up.  If you are testing forensic focus items change to $true
+    $powerpoint.visible = [Microsoft.Office.Core.MsoTriState]::msoTrue
+    #create meat of powerpoint file
+    $pptx = $powerpoint.Presentations.add()
+
+    #in order to save file.  ONLY CHANGE 'powerpoint.pptx' if you want to give it another name.  
+    #$folder is a location variable
+    $pptx_path = "$folderpowerpoint\powerpoint.pptx"
+    $pptx.SaveAs($pptx_path)
+    $pptx.close()
+    $powerpoint.quit()
+    $statusBar.Text= "Made One powerpoint file, Please Hit Copy to feed the Legion"
+    # Not sure how to work with powershell...so...this will do until i figure it out
+    start-sleep -seconds $BoxSeconds.Text
+    taskkill.exe /s localhost /F /IM POWERPNT.exe /T 
+
+}
+
+Function Copingpowerpoints { 
+    #where the magic happens.  Look into this folder for a file
+    $Files = Get-ChildItem -Filter '*.pptx' -Recurse -Path $folderpowerpoint
+    $num_box = $BoxCreate.Text
+    #within said folder start counting and if the total number of files is less than $n (here it is set to 2500)
+    # copy the file until you hit $n numbers, and name them sequential for ease of use.
+    for($n = 0; $n -lt $num_box; $n++)
+    { foreach ($File in $Files)
+        { 
+            #1..$num_box | %{ Copy-Item $File.FullName ($folderpowerpoint + $File.BaseName + "_$n.pptx") }
+            
+            # pipe is super expensive, does another full on solution
+            $totalcount = 1..$num_box 
+            foreach ($n in $totalcount)
+            { Copy-Item $File.FullName ($folderpowerpoint + $File.BaseName + "_$n.pptx") }
+
+        }
+    }
+}
+
+Function PeekABoo_powerpoint {
+    # Generate a list of all files in the folder and pipe it to ForEach-Object
+    Get-ChildItem $folderpowerpoint -Filter '*.pptx' -Name |
+
+    # Loop through each file
+    ForEach-Object { 
+
+        # Combines source folder path and file name
+        $filePath = $folderpowerpoint + $_
+
+        #Opens a file
+        Invoke-Item ($filePath)
+    
+        #wait a spell to ensure jumplist has time to see the file
+        start-sleep -seconds $BoxSeconds.Text
+    
+        # the most ugly way to close powerpoint docs, but the more reliable :-(
+        taskkill.exe /s localhost /F /IM POWERPNT.exe /T 
+    }
+}
+###########################
+#        Buttons          #
+###########################
+# Exit Buttons
+$ButtonExit.Location = "630,335"
+$ButtonExit.Size = "75,25"
+$ButtonExit.Text = "Exit"
+$ButtonExit.add_Click({$Form.close()})
+$Form.Controls.Add($ButtonExit)
+
+#Clear Button
+$ButtonClear.Location = "710,335"
+$ButtonClear.Size = "75,25"
+$ButtonClear.Text = "Clear"
+$ButtonClear.add_Click({ClearForm})
+$Form.Controls.Add($ButtonClear)
+
+#Status Bar
+$statusBar.Name = 'statusBar'
+$statusBar.Size = '0,30'
+$statusBar.Text = 'Ready'
+$form.Controls.Add($statusBar)
+
+###########################
+#Close-out (At the bottom)#
+###########################
+$Form.ShowDialog() 
+
+}
+
+Makeform
